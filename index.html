@@ -1,204 +1,27 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-  <meta charset='UTF-8' />
-  <title>ElectronでSqlite3 CRUD</title>
-  <style>
-    table {
-      border-collapse: collapse;
-      width: 100%;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: left;
-    }
-    th {
-      background-color: #f2f2f2;
-    }
-    .action-button {
-      margin: 2px;
-      padding: 5px 10px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .edit-button { background-color: #4CAF50; color: white; }
-    .delete-button { background-color: #f44336; color: white; }
-    #memoInput {
-      padding: 5px;
-      margin-right: 5px;
-      width: 300px;
-    }
-    button {
-      padding: 5px 10px;
-      margin-right: 5px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>ElectronでSqlite CRUD</title>
+    <style>
+        #imagePreview {
+            max-width: 200px;
+            max-height: 200px;
+            margin-top: 10px;
+        }
+    </style>
 </head>
-
 <body>
-  <h1>ElectronでSqlite CRUD</h1>
-  <p>テキストをSqlite3にて記録、更新、削除するサンプルです</p>
-  <div id="inputContainer">
-    <input type='text' id="memoInput" placeholder="メモを入力してください">
-    <input type='hidden' id="memoId">
-    <button id='insertBtn'>書込み</button>
-    <button id='updateBtn' style="display: none;">更新</button>
-    <button id='cancelBtn' style="display: none;">キャンセル</button>
-  </div>
-  <div id='tableContainer'></div>
+    <div id="inputContainer">
+        <input type="text" id="memoInput" placeholder="メモを入力">
+        <input type="file" id="imageInput" accept="image/*">
+        <img id="imagePreview" style="display: none;">
+        <button id="submitButton">書込み</button>
+        <button id="updateButton" style="display: none;">更新</button>
+        <button id="cancelButton" style="display: none;">キャンセル</button>
+    </div>
+    <div id="tableContainer"></div>
 
-  <script>
-    console.log("Script started");
-
-    window.dbOp.createDb()
-      .then(() => console.log("Database created successfully"))
-      .catch(err => { console.error("Database creation error:", err) });
-
-    function loadData() {
-      console.log("Loading data...");
-      return window.dbOp.selectAll()
-        .then(data => {
-          console.log("Data loaded:", data);
-          renderTable(data);
-        })
-        .catch(err => { console.error("Data loading error:", err) });
-    }
-
-    function renderTable(data) {
-      console.log("Rendering table...");
-      const container = document.getElementById('tableContainer');
-      container.innerHTML = '';
-      const table = document.createElement('table');
-      const thead = document.createElement('thead');
-      const tbody = document.createElement('tbody');
-
-      const headerRow = document.createElement('tr');
-      ['ID', 'メモ', '日時', 'アクション'].forEach(text => {
-        const th = document.createElement('th');
-        th.textContent = text;
-        headerRow.appendChild(th);
-      });
-      thead.appendChild(headerRow);
-
-      data.forEach(row => {
-        const tr = document.createElement('tr');
-        Object.values(row).forEach(value => {
-          const td = document.createElement('td');
-          td.textContent = value;
-          tr.appendChild(td);
-        });
-
-        const actionTd = document.createElement('td');
-        const editButton = document.createElement('button');
-        editButton.textContent = '編集';
-        editButton.className = 'action-button edit-button';
-        editButton.onclick = () => editMemo(row.id, row.memo);
-        const deleteButton = document.createElement('button');
-        deleteButton.textContent = '削除';
-        deleteButton.className = 'action-button delete-button';
-        deleteButton.onclick = () => deleteMemo(row.id);
-        actionTd.appendChild(editButton);
-        actionTd.appendChild(deleteButton);
-        tr.appendChild(actionTd);
-
-        tbody.appendChild(tr);
-      });
-
-      table.appendChild(thead);
-      table.appendChild(tbody);
-      container.appendChild(table);
-    }
-
-    loadData();
-
-    function setupEventListeners() {
-      console.log("Setting up event listeners...");
-      
-      document.getElementById('insertBtn').addEventListener('click', () => {
-        console.log("Insert button clicked");
-        const memoText = document.getElementById('memoInput').value;
-        if (memoText) {
-          window.dbOp.insertData(memoText)
-            .then(() => {
-              console.log("Data inserted successfully");
-              document.getElementById('memoInput').value = "";
-              loadData();
-            })
-            .catch(err => { console.error("Insert error:", err) });
-        }
-      });
-
-      document.getElementById('updateBtn').addEventListener('click', () => {
-        console.log("Update button clicked");
-        const memoId = document.getElementById('memoId').value;
-        const memoText = document.getElementById('memoInput').value;
-        if (memoId && memoText) {
-          window.dbOp.updateData(memoId, memoText)
-            .then(() => {
-              console.log("Data updated successfully");
-              resetForm();
-              loadData();
-            })
-            .catch(err => { console.error("Update error:", err) });
-        }
-      });
-
-      document.getElementById('cancelBtn').addEventListener('click', resetForm);
-
-      document.getElementById('memoInput').addEventListener('input', (e) => {
-        console.log("Input event fired:", e.target.value);
-      });
-    }
-
-    setupEventListeners();
-
-    function editMemo(id, text) {
-      console.log("Editing memo:", id, text);
-      document.getElementById('memoId').value = id;
-      document.getElementById('memoInput').value = text;
-      document.getElementById('insertBtn').style.display = 'none';
-      document.getElementById('updateBtn').style.display = 'inline';
-      document.getElementById('cancelBtn').style.display = 'inline';
-    }
-
-    function deleteMemo(id) {
-      console.log("Deleting memo:", id);
-      if (confirm('本当に削除しますか？')) {
-        window.dbOp.deleteData(id)
-          .then(() => {
-            console.log("Data deleted successfully");
-            loadData();
-            resetForm();
-            recreateInputField();
-          })
-          .catch(err => { console.error("Delete error:", err) });
-      }
-    }
-
-    function resetForm() {
-      console.log("Resetting form");
-      document.getElementById('memoId').value = '';
-      document.getElementById('memoInput').value = '';
-      document.getElementById('insertBtn').style.display = 'inline';
-      document.getElementById('updateBtn').style.display = 'none';
-      document.getElementById('cancelBtn').style.display = 'none';
-      document.getElementById('memoInput').focus();
-    }
-
-    function recreateInputField() {
-      console.log("Recreating input field");
-      const inputContainer = document.getElementById('inputContainer');
-      const oldInput = document.getElementById('memoInput');
-      const newInput = oldInput.cloneNode(true);
-      oldInput.parentNode.replaceChild(newInput, oldInput);
-      newInput.addEventListener('input', (e) => {
-        console.log("Input event fired on new input:", e.target.value);
-      });
-    }
-  </script>
+    <script src="renderer.js"></script>
 </body>
-
 </html>
