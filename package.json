@@ -24,7 +24,8 @@
     "electron": "^31.3.1"
   },
   "dependencies": {
-    "electron-squirrel-startup": "^1.0.1",
-    "sqlite3": "^5.1.7"
+    "electron-squirrel-startup": "^1.0.0",
+    "sqlite3": "^5.1.7",
+    "uuid": "^9.0.1"
   }
 }
