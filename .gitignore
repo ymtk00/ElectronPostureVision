@@ -1,0 +1,16 @@
+# ビルド生成物
+dist/
+build/
+out/
+
+# パッケージマネージャーのキャッシュ
+node_modules/
+bower_components/
+jspm_packages/
+
+# OSやエディタの設定ファイル
+.DS_Store
+Thumbs.db
+
+# SQLite3 データベース
+*.sqlite3 
