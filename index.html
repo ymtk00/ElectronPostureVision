@@ -1,25 +1,37 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <title>ElectronでSqlite CRUD</title>
+    <title>メモアプリ</title>
     <style>
         #imagePreview {
             max-width: 200px;
             max-height: 200px;
-            margin-top: 10px;
+            display: none;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
         }
     </style>
 </head>
 <body>
     <div id="inputContainer">
-        <input type="text" id="memoInput" placeholder="メモを入力">
-        <input type="file" id="imageInput" accept="image/*">
-        <img id="imagePreview" style="display: none;">
+        <textarea id="memoInput" rows="4" cols="50"></textarea><br>
+        <input type="file" id="imageInput" accept="image/*"><br>
+        <img id="imagePreview"><br>
         <button id="submitButton">書込み</button>
-        <button id="updateButton" style="display: none;">更新</button>
-        <button id="cancelButton" style="display: none;">キャンセル</button>
+        <button id="updateButton" style="display:none;">更新</button>
+        <button id="cancelButton" style="display:none;">キャンセル</button>
     </div>
+
     <div id="tableContainer"></div>
 
     <script src="renderer.js"></script>
