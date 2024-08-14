@@ -3,6 +3,7 @@ const path = require('path');
 const sqlite3 = require('sqlite3');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
+const moment = require('moment');
 
 const db = new sqlite3.Database("./my_database.db");
 
@@ -40,7 +41,7 @@ app.whenReady().then(() => {
     new Promise((resolve, reject) => {
       let imageUrl = null;
       if (imageData) {
-        const fileName = `${uuidv4()}.png`;
+        const fileName = `${moment().format('YYYYMMDDHHmmss')}.jpg`;
         const filePath = path.join(app.getPath('userData'), 'images', fileName);
         fs.mkdirSync(path.dirname(filePath), { recursive: true });
         fs.writeFileSync(filePath, Buffer.from(imageData.replace(/^data:image\/\w+;base64,/, ""), 'base64'));
@@ -54,17 +55,11 @@ app.whenReady().then(() => {
   );
 
   function getFilePathFromUrl(fileUrl) {
-    // Remove the 'file://' protocol
     let filePath = fileUrl.replace(/^file:\/\//, '');
-    
-    // Remove any leading slashes
     filePath = filePath.replace(/^\/+/, '');
-    
-    // On Windows, add the drive letter back if it's missing
     if (process.platform === 'win32' && !/^[A-Za-z]:/.test(filePath)) {
       filePath = `C:${filePath}`;
     }
-    
     return filePath;
   }
 
@@ -93,12 +88,11 @@ app.whenReady().then(() => {
               if (err && err.code !== 'ENOENT') {
                 console.error('Failed to delete old image:', err);
               }
-              // ファイルが存在しない場合でも続行
             });
           }
   
           // 新しい画像を保存
-          const fileName = `${uuidv4()}.png`;
+          const fileName = `${moment().format('YYYYMMDDHHmmss')}.jpg`;
           const filePath = path.join(app.getPath('userData'), 'images', fileName);
           fs.mkdirSync(path.dirname(filePath), { recursive: true });
           fs.writeFileSync(filePath, Buffer.from(imageData.replace(/^data:image\/\w+;base64,/, ""), 'base64'));
@@ -131,7 +125,6 @@ app.whenReady().then(() => {
             if (err && err.code !== 'ENOENT') {
               console.error('Failed to delete image:', err);
             }
-            // ファイルが存在しない場合でも続行
             deleteFromDB();
           });
         } else {
@@ -140,7 +133,6 @@ app.whenReady().then(() => {
       });
     })
   );
-  
 
   createWindow();
   app.on('activate', () => {
