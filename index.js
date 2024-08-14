@@ -2,10 +2,15 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const sqlite3 = require('sqlite3');
 const fs = require('fs');
-const { v4: uuidv4 } = require('uuid');
 const moment = require('moment');
 
 const db = new sqlite3.Database("./my_database.db");
+const imagesDir = path.join(app.getPath('userData'), 'images');
+
+// Ensure images directory exists
+if (!fs.existsSync(imagesDir)) {
+  fs.mkdirSync(imagesDir, { recursive: true });
+}
 
 const createWindow = () => {
   const win = new BrowserWindow({
@@ -42,8 +47,7 @@ app.whenReady().then(() => {
       let imageUrl = null;
       if (imageData) {
         const fileName = `${moment().format('YYYYMMDDHHmmss')}.jpg`;
-        const filePath = path.join(app.getPath('userData'), 'images', fileName);
-        fs.mkdirSync(path.dirname(filePath), { recursive: true });
+        const filePath = path.join(imagesDir, fileName);
         fs.writeFileSync(filePath, Buffer.from(imageData.replace(/^data:image\/\w+;base64,/, ""), 'base64'));
         imageUrl = `file://${filePath}`;
       }
@@ -53,15 +57,6 @@ app.whenReady().then(() => {
       });
     })
   );
-
-  function getFilePathFromUrl(fileUrl) {
-    let filePath = fileUrl.replace(/^file:\/\//, '');
-    filePath = filePath.replace(/^\/+/, '');
-    if (process.platform === 'win32' && !/^[A-Za-z]:/.test(filePath)) {
-      filePath = `C:${filePath}`;
-    }
-    return filePath;
-  }
 
   ipcMain.handle('updateData', (eve, id, memoText, imageData) =>
     new Promise((resolve, reject) => {
@@ -81,9 +76,9 @@ app.whenReady().then(() => {
         };
   
         if (imageData) {
-          // 古い画像を削除
+          // Delete old image
           if (imageUrl) {
-            const oldImagePath = getFilePathFromUrl(imageUrl);
+            const oldImagePath = imageUrl.replace('file://', '');
             fs.unlink(oldImagePath, (err) => {
               if (err && err.code !== 'ENOENT') {
                 console.error('Failed to delete old image:', err);
@@ -91,10 +86,9 @@ app.whenReady().then(() => {
             });
           }
   
-          // 新しい画像を保存
+          // Save new image
           const fileName = `${moment().format('YYYYMMDDHHmmss')}.jpg`;
-          const filePath = path.join(app.getPath('userData'), 'images', fileName);
-          fs.mkdirSync(path.dirname(filePath), { recursive: true });
+          const filePath = path.join(imagesDir, fileName);
           fs.writeFileSync(filePath, Buffer.from(imageData.replace(/^data:image\/\w+;base64,/, ""), 'base64'));
           imageUrl = `file://${filePath}`;
         }
@@ -120,7 +114,7 @@ app.whenReady().then(() => {
         };
   
         if (row && row.image_url) {
-          const imagePath = getFilePathFromUrl(row.image_url);
+          const imagePath = row.image_url.replace('file://', '');
           fs.unlink(imagePath, (err) => {
             if (err && err.code !== 'ENOENT') {
               console.error('Failed to delete image:', err);
@@ -143,4 +137,4 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   db.close();
   if (process.platform !== 'darwin') app.quit();
-})
+});
