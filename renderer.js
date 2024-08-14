@@ -6,33 +6,38 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateButton = document.getElementById('updateButton');
     const cancelButton = document.getElementById('cancelButton');
     const tableContainer = document.getElementById('tableContainer');
+    const cameraButton = document.getElementById('cameraButton');
+    const videoElement = document.getElementById('videoElement');
+    const captureButton = document.getElementById('captureButton');
+    const cameraCancelButton = document.getElementById('cameraCancelButton');
 
     let currentId = null;
     let currentImageData = null;
+    let stream = null;
 
     window.dbOp.createDb();
 
     function refreshTable() {
         window.dbOp.selectAll().then(rows => {
-          let table = '<table border="1"><tr><th>ID</th><th>メモ</th><th>日時</th><th>画像</th><th>操作</th></tr>';
-          rows.forEach(row => {
-            table += `<tr>
-              <td>${row.id}</td>
-              <td>${row.memo}</td>
-              <td>${row.date_time}</td>
-              <td>${row.image_url ? `<img src="${row.image_url}" width="50" onclick="showFullImage('${row.image_url}')">` : ''}</td>
-              <td>
-                <button onclick="editMemo(${row.id}, '${row.memo}', '${row.image_url}')">編集</button>
-                <button onclick="deleteMemo(${row.id})">削除</button>
-              </td>
-            </tr>`;
-          });
-          table += '</table>';
-          tableContainer.innerHTML = table;
+            let table = '<table border="1"><tr><th>ID</th><th>メモ</th><th>日時</th><th>画像</th><th>操作</th></tr>';
+            rows.forEach(row => {
+                table += `<tr>
+                <td>${row.id}</td>
+                <td>${row.memo}</td>
+                <td>${row.date_time}</td>
+                <td>${row.image_url ? `<img src="${row.image_url}" width="50" onclick="showFullImage('${row.image_url}')">` : ''}</td>
+                <td>
+                    <button onclick="editMemo(${row.id}, '${row.memo}', '${row.image_url}')">編集</button>
+                    <button onclick="deleteMemo(${row.id})">削除</button>
+                </td>
+                </tr>`;
+            });
+            table += '</table>';
+            tableContainer.innerHTML = table;
         });
-      }
+    }
 
-      submitButton.addEventListener('click', () => {
+    submitButton.addEventListener('click', () => {
         const memoText = memoInput.value;
         window.dbOp.insertData(memoText, currentImageData).then(() => {
             memoInput.value = '';
@@ -85,6 +90,46 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    cameraButton.addEventListener('click', async () => {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            videoElement.srcObject = stream;
+            videoElement.style.display = 'block';
+            await videoElement.play(); // ビデオの再生を確実に開始
+            captureButton.style.display = 'inline';
+            cameraCancelButton.style.display = 'inline';
+            cameraButton.style.display = 'none';
+            imageInput.style.display = 'none';
+        } catch (err) {
+            console.error('Failed to access camera:', err);
+            alert('カメラへのアクセスに失敗しました。');
+        }
+    });
+
+    captureButton.addEventListener('click', () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = videoElement.videoWidth;
+        canvas.height = videoElement.videoHeight;
+        canvas.getContext('2d').drawImage(videoElement, 0, 0);
+        currentImageData = canvas.toDataURL('image/jpeg');
+        imagePreview.src = currentImageData;
+        imagePreview.style.display = 'block';
+        stopCamera();
+    });
+
+    cameraCancelButton.addEventListener('click', stopCamera);
+
+    function stopCamera() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+        videoElement.style.display = 'none';
+        captureButton.style.display = 'none';
+        cameraCancelButton.style.display = 'none';
+        cameraButton.style.display = 'inline';
+        imageInput.style.display = 'inline';
+    }
+
     window.editMemo = (id, memo, imageUrl) => {
         currentId = id;
         memoInput.value = memo;
@@ -94,7 +139,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (imageUrl) {
             imagePreview.src = imageUrl;
             imagePreview.style.display = 'block';
-            // 現在の画像URLを保存
             currentImageData = imageUrl;
         } else {
             imagePreview.style.display = 'none';
@@ -133,11 +177,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
         fullImage.appendChild(img);
         fullImage.addEventListener('click', () => {
-          document.body.removeChild(fullImage);
+            document.body.removeChild(fullImage);
         });
     
         document.body.appendChild(fullImage);
-      };
+    };
 
     refreshTable();
 });
